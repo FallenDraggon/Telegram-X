@@ -79,6 +79,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     public final TdApi.LinkPreview linkPreview;
     public TdApi.WebPageInstantView instantView;
     public String anchorLink;
+    public boolean isRichMessage;
 
     public Args (TdApi.LinkPreview linkPreview, TdApi.WebPageInstantView instantView, String anchorLink) {
       this.linkPreview = linkPreview;
@@ -489,7 +490,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     }
     // recyclerView.setItemAnimator(new CustomItemAnimator(Anim.DECELERATE_INTERPOLATOR, 180l));
 
-    if (!isReplace) {
+    if (!isReplace && !args.isRichMessage) {
       tdlib.send(new TdApi.GetWebPageInstantView(getUrl(), false), (webPageInstantView, error) -> {
         if (error != null) {
           UI.showError(error);

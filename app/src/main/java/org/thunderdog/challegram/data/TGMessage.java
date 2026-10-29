@@ -8451,8 +8451,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageGiveaway.CONSTRUCTOR: {
           return new TGMessageGiveaway(context, msg, (TdApi.MessageGiveaway) content);
         }
+        case TdApi.MessageRichMessage.CONSTRUCTOR: {
+          TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) content;
+          TdApi.PageBlockPhoto photo = TGMessageRich.findFirstPhoto(richMessage.message);
+          if (photo != null && photo.photo != null && photo.photo.sizes.length > 0) {
+            return new TGMessageRichPhoto(context, msg, richMessage, photo);
+          }
+          return new TGMessageRich(context, msg, richMessage);
+        }
         // unsupported
-        case TdApi.MessageRichMessage.CONSTRUCTOR:
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
         case TdApi.MessageStory.CONSTRUCTOR:

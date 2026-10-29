@@ -190,6 +190,10 @@ public class TGMessageMedia extends TGMessage {
     return MESSAGE_NOT_CHANGED;
   }
 
+  protected MediaWrapper getSingularMediaWrapper () {
+    return mosaicWrapper.getSingularItem();
+  }
+
   public TdApi.File getTargetFile () {
     // TODO
     return mosaicWrapper.getSingularItem().getTargetFile();
@@ -246,6 +250,10 @@ public class TGMessageMedia extends TGMessage {
   private boolean hasEditedText;
   private boolean hasEditedMedia;
 
+  protected TdApi.FormattedText getContentCaption (TdApi.Message message) {
+    return Td.textOrCaption(message.content);
+  }
+
   private boolean checkCommonCaption () {
     return checkCommonCaption(false);
   }
@@ -263,7 +271,7 @@ public class TGMessageMedia extends TGMessage {
           if (caption != null) {
             hasEditedText = true;
           } else {
-            caption = Td.textOrCaption(captionMessage.content);
+            caption = getContentCaption(captionMessage);
           }
           captionMessageId = captionMessage.id;
         }
@@ -272,7 +280,7 @@ public class TGMessageMedia extends TGMessage {
         if (caption != null) {
           hasEditedText = true;
         } else {
-          caption = Td.textOrCaption(msg.content);
+          caption = getContentCaption(msg);
         }
         captionMessageId = msg.id;
       }

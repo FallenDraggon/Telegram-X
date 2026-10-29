@@ -817,6 +817,31 @@ public abstract class PageBlock {
         break;
       }
 
+      // Rich message blocks, mapped to the closest instant view blocks
+      case TdApi.PageBlockSectionHeading.CONSTRUCTOR: {
+        TdApi.PageBlockSectionHeading heading = (TdApi.PageBlockSectionHeading) block;
+        parse(parent, out, context, heading.size <= 2 ? new TdApi.PageBlockHeader(heading.text) : new TdApi.PageBlockSubheader(heading.text), openParameters);
+        break;
+      }
+      case TdApi.PageBlockExpandableBlockQuote.CONSTRUCTOR: {
+        TdApi.PageBlockExpandableBlockQuote quote = (TdApi.PageBlockExpandableBlockQuote) block;
+        parse(parent, out, context, new TdApi.PageBlockBlockQuote(new TdApi.PageBlock[] {new TdApi.PageBlockParagraph(quote.text)}, quote.credit), openParameters);
+        break;
+      }
+      case TdApi.PageBlockThinking.CONSTRUCTOR: {
+        parse(parent, out, context, new TdApi.PageBlockParagraph(((TdApi.PageBlockThinking) block).text), openParameters);
+        break;
+      }
+      case TdApi.PageBlockMathematicalExpression.CONSTRUCTOR: {
+        parse(parent, out, context, new TdApi.PageBlockPreformatted(new TdApi.RichTextPlain(((TdApi.PageBlockMathematicalExpression) block).expression), "latex"), openParameters);
+        break;
+      }
+      case TdApi.PageBlockButtonRow.CONSTRUCTOR:
+      case TdApi.PageBlockUnsupported.CONSTRUCTOR: {
+        // Not supported yet
+        break;
+      }
+
       default: {
         throw new UnsupportedOperationException(block.toString());
       }

@@ -282,7 +282,9 @@ public class ContentPreview {
       }
       case TdApi.MessageRichMessage.CONSTRUCTOR: {
         TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) message.content;
-        // TODO rich message text representation
+        if (allowContent) {
+          formattedText = TGMessageRich.buildText(richMessage.message, false);
+        }
         break;
       }
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
@@ -1289,6 +1291,7 @@ public class ContentPreview {
       case TdApi.MessageText.CONSTRUCTOR:
         return new ContentPreview(arg1 == ARG_TRUE ? EMOJI_LINK : null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+      case TdApi.MessageRichMessage.CONSTRUCTOR:
         return new ContentPreview(null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
       case TdApi.MessagePhoto.CONSTRUCTOR:
         return new ContentPreview(EMOJI_PHOTO, R.string.ChatContentPhoto, formattedArgument, argumentTranslatable);
@@ -1635,7 +1638,6 @@ public class ContentPreview {
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
-      case TdApi.MessageRichMessage.CONSTRUCTOR:
       case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
       case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
       case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
