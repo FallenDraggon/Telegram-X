@@ -82,6 +82,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   @SuppressWarnings("DeprecatedIsStillUsed")
   public static final String __DEVICE_TDLIB_VERSION_KEY = "registered_device_tdlib";
   public static final String DEVICE_TDLIB_VERSION2_KEY = "registered_device_td";
+  public static final String DEVICE_REGISTER_TIME_KEY = "registered_device_time";
 
   public static final String NOTIFICATION_ERROR_KEY = "notification_error";
   public static final String NOTIFICATION_VERSION_KEY = "notification_version";
@@ -615,6 +616,12 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return Settings.instance().getString(key(DEVICE_TDLIB_VERSION2_KEY, accountId), "");
   }
 
+  // Telegram API requires calling registerDevice at least once every 24 hours
+  private static boolean isDeviceRegistrationFresh (int accountId) {
+    long registerTime = Settings.instance().getLong(key(DEVICE_REGISTER_TIME_KEY, accountId), 0);
+    return System.currentTimeMillis() - registerTime < TimeUnit.HOURS.toMillis(24);
+  }
+
   @Nullable
   private static TdApi.DeviceToken getRegisteredDeviceToken (int accountId) {
     @DeviceTokenType int tokenType = Settings.instance().getInt(key(DEVICE_TOKEN_TYPE_KEY, accountId), DeviceTokenType.FIREBASE_CLOUD_MESSAGING);
@@ -638,6 +645,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     );
     pmc.putLong(key(DEVICE_UID_KEY, accountId), userId);
     pmc.putString(key(DEVICE_TDLIB_VERSION2_KEY, accountId), BuildConfig.TDLIB_VERSION);
+    pmc.putLong(key(DEVICE_REGISTER_TIME_KEY, accountId), System.currentTimeMillis());
     if (otherUserIds != null && otherUserIds.length > 0) {
       pmc.putLongArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
     } else {
@@ -649,6 +657,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public static boolean checkRegisteredDeviceToken (int accountId, long userId, TdApi.DeviceToken token, long[] otherUserIds, boolean skipOtherUserIdsCheck) {
     return
       BuildConfig.TDLIB_VERSION.equals(getRegisteredDeviceTdlibVersion2(accountId)) &&
+      isDeviceRegistrationFresh(accountId) &&
       getRegisteredDeviceUserId(accountId) == userId &&
       Td.equalsTo(getRegisteredDeviceToken(accountId), token) &&
       (skipOtherUserIdsCheck || Arrays.equals(getRegisteredDeviceOtherUserIds(accountId), otherUserIds != null && otherUserIds.length > 0 ? otherUserIds : null));
@@ -661,6 +670,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       .remove(key(DEVICE_UID_KEY, accountId))
       .remove(key(DEVICE_OTHER_UID_KEY, accountId))
       .remove(key(DEVICE_TDLIB_VERSION2_KEY, accountId))
+      .remove(key(DEVICE_REGISTER_TIME_KEY, accountId))
       .apply();
   }
 
