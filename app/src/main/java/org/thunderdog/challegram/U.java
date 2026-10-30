@@ -704,7 +704,10 @@ public class U {
     final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ?
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER :
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
-    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
+    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context)
+      .setExtensionRendererMode(extensionMode)
+      // Try the next decoder (e.g. software) when the preferred one fails to initialize, e.g. on 4K videos exceeding hardware capabilities
+      .setEnableDecoderFallback(true);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     final AnalyticsCollector analyticsCollector;
     if (Log.getLogLevel() > Log.LEVEL_ASSERT) {
