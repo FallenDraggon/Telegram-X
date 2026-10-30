@@ -116,7 +116,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private long contextId;
 
   private boolean canShowSponsoredMessage (long chatId) {
-    return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
+    return tdlib.isChannel(chatId) && !Settings.instance().needHideSponsoredMessages() && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
   }
 
   public void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessages> callback) {
@@ -1434,6 +1434,11 @@ public class MessagesLoader implements Client.ResultHandler {
               }
               j--;
             }
+          }
+          TGMessage filtered = TGMessage.applyKeywordFilter(manager, cur);
+          if (filtered != cur) {
+            cur.onDestroy();
+            cur = filtered;
           }
         }
       } catch (Throwable t) {

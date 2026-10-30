@@ -131,6 +131,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.InlineResult;
+import org.thunderdog.challegram.data.KeywordFilter;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
 import org.thunderdog.challegram.data.InlineResultCommon;
@@ -142,6 +143,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
+import org.thunderdog.challegram.data.TGMessageRich;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.TGUser;
@@ -5733,6 +5735,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
         }
         return true;
+      } else if (id == R.id.btn_messageOpenRichMessage) {
+        TGMessageRich.open(this, selectedMessage.getChatId(), selectedMessage.getNewestMessage().id);
+        return true;
+      } else if (id == R.id.btn_messageSelectText) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+        showSelectTextDialog(KeywordFilter.getText(selectedMessage.getAllMessages()));
+        return true;
+      } else if (id == R.id.btn_messageAddToKeywordFilter) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+        openInputAlert(Lang.getString(R.string.KeywordFilterAdd), Lang.getString(R.string.KeywordFilterPhrasesHint), R.string.Add, R.string.Cancel, null, (inputView, result) -> {
+          if (result.trim().isEmpty()) {
+            return false;
+          }
+          addToKeywordFilter(new String[] {result});
+          return true;
+        }, true);
+        return true;
       } else if (id == R.id.btn_messageStickerSet) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         ((TGMessageSticker) selectedMessage).openStickerSet();
@@ -7684,6 +7703,66 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Nullable
   public TdApi.ChatList chatList () {
     return openedFromChatList;
+  }
+
+  private void addToKeywordFilter (String[] phrases) {
+    KeywordFilter.addPhrases(phrases);
+    manager.applyKeywordFilterToDisplayedMessages();
+    UI.showToast(R.string.KeywordFilterAdded, Toast.LENGTH_SHORT);
+  }
+
+  /**
+   * Message text is drawn on canvas and can't be selected in place, so it is shown in a selectable text view.
+   */
+  private void showSelectTextDialog (String text) {
+    TextView textView = new TextView(context());
+    textView.setText(text);
+    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    textView.setTextColor(Theme.textAccentColor());
+    textView.setTextIsSelectable(true);
+    int padding = Screen.dp(24f);
+    textView.setPadding(padding, Screen.dp(8f), padding, Screen.dp(8f));
+
+    ScrollView scrollView = new ScrollView(context());
+    scrollView.addView(textView);
+
+    AlertDialog.Builder builder = new AlertDialog.Builder(context(), Theme.dialogTheme());
+    builder.setTitle(Lang.getString(R.string.SelectText));
+    builder.setView(scrollView);
+    builder.setPositiveButton(Lang.getString(R.string.Done), (dialog, which) -> dialog.dismiss());
+    AlertDialog dialog = showAlert(builder);
+
+    textView.setCustomSelectionActionModeCallback(new android.view.ActionMode.Callback() {
+      @Override
+      public boolean onCreateActionMode (android.view.ActionMode mode, android.view.Menu menu) {
+        menu.add(android.view.Menu.NONE, R.id.btn_selectionAddToKeywordFilter, android.view.Menu.NONE, Lang.getString(R.string.KeywordFilterAddSelection));
+        return true;
+      }
+
+      @Override
+      public boolean onPrepareActionMode (android.view.ActionMode mode, android.view.Menu menu) {
+        return false;
+      }
+
+      @Override
+      public boolean onActionItemClicked (android.view.ActionMode mode, android.view.MenuItem item) {
+        if (item.getItemId() != R.id.btn_selectionAddToKeywordFilter) {
+          return false;
+        }
+        int start = Math.min(textView.getSelectionStart(), textView.getSelectionEnd());
+        int end = Math.max(textView.getSelectionStart(), textView.getSelectionEnd());
+        String selection = start >= 0 && end > start ? text.substring(start, end).trim() : "";
+        if (!selection.isEmpty()) {
+          addToKeywordFilter(new String[] {selection});
+          mode.finish();
+          dialog.dismiss();
+        }
+        return true;
+      }
+
+      @Override
+      public void onDestroyActionMode (android.view.ActionMode mode) { }
+    });
   }
 
   @Override

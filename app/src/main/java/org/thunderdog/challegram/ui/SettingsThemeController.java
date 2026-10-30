@@ -40,6 +40,7 @@ import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.KeywordFilter;
 import org.thunderdog.challegram.helper.LocationHelper;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -251,6 +252,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
         } else if (itemId == R.id.btn_separateMedia) {
           v.getToggler().setRadioEnabled(Settings.instance().needSeparateMediaTab(), isUpdate);
+        } else if (itemId == R.id.btn_keywordFilter) {
+          v.getToggler().setRadioEnabled(KeywordFilter.isEnabled(), isUpdate);
+        } else if (itemId == R.id.btn_hideSponsoredMessages) {
+          v.getToggler().setRadioEnabled(Settings.instance().needHideSponsoredMessages(), isUpdate);
+        } else if (itemId == R.id.btn_keywordFilterPhrases) {
+          String[] phrases = KeywordFilter.getPhrases();
+          if (phrases.length == 0) {
+            v.setData(R.string.KeywordFilterPhrasesNone);
+          } else {
+            v.setData("«" + TextUtils.join("», «", phrases) + "»");
+          }
         } else if (itemId == R.id.btn_restrictSensitiveContent) {
           v.getToggler().setRadioEnabled(tdlib.ignoreSensitiveContentRestrictions(), isUpdate);
         } else if (itemId == R.id.btn_ignoreContentRestrictions) {
@@ -589,6 +601,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_markdown, 0, R.string.EditMarkdown));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.EditMarkdownHint2), false));
+
+      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.KeywordFilterHeader));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_keywordFilter, 0, R.string.KeywordFilter));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_keywordFilterPhrases, 0, R.string.KeywordFilterPhrases));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.KeywordFilterDesc));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_hideSponsoredMessages, 0, R.string.HideSponsoredMessages));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.HideSponsoredMessagesDesc));
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.VoiceMessages));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1181,6 +1205,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
     } else if (viewId == R.id.btn_separateMedia) {
       Settings.instance().setNeedSeparateMediaTab(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_keywordFilter) {
+      KeywordFilter.setEnabled(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_hideSponsoredMessages) {
+      Settings.instance().setHideSponsoredMessages(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_keywordFilterPhrases) {
+      navigateTo(new KeywordFilterController(context, tdlib));
     } else if (viewId == R.id.btn_restrictSensitiveContent) {
       tdlib.setIgnoreSensitiveContentRestrictions(adapter.toggleView(v));
     } else if (viewId == R.id.btn_ignoreContentRestrictions) {
@@ -1503,6 +1533,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
   public void onFocus () {
     super.onFocus();
     context().checkNightMode();
+    if (adapter != null) {
+      // Phrases may have been changed on the keyword filter screen
+      adapter.updateValuedSettingById(R.id.btn_keywordFilter);
+      adapter.updateValuedSettingById(R.id.btn_keywordFilterPhrases);
+    }
   }
 
   private void editTheme (ThemeInfo theme, boolean add) {

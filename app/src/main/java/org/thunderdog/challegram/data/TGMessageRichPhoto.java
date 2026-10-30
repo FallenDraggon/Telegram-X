@@ -13,19 +13,17 @@
 package org.thunderdog.challegram.data;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
-import org.thunderdog.challegram.ui.MessagesController;
 
 /**
  * Rich message that contains a photo: the first photo is shown as media, the rest as a text summary.
- * Tapping either the photo or the message opens the full version in Instant View.
+ * Tapping the photo opens the full version in Instant View.
  */
 public class TGMessageRichPhoto extends TGMessageMedia {
   public TGMessageRichPhoto (MessagesManager context, TdApi.Message msg, TdApi.MessageRichMessage content, TdApi.PageBlockPhoto photo) {
     super(context, msg,
       new TdApi.MessagePhoto(photo.photo, null, null, false, photo.hasSpoiler, false),
-      TGMessageRich.buildText(content.message, true, photo)
+      TGMessageRich.buildText(content.message, photo)
     );
     // Media viewer expects photo message content, so open the whole message instead
     getSingularMediaWrapper().setOnClickListener((view, wrapper) -> {
@@ -39,7 +37,7 @@ public class TGMessageRichPhoto extends TGMessageMedia {
     // Called from the super constructor as well, so it must not rely on fields
     if (message.content.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR) {
       TdApi.RichMessage richMessage = ((TdApi.MessageRichMessage) message.content).message;
-      return TGMessageRich.buildText(richMessage, true, TGMessageRich.findFirstPhoto(richMessage));
+      return TGMessageRich.buildText(richMessage, TGMessageRich.findFirstPhoto(richMessage));
     }
     return super.getContentCaption(message);
   }
@@ -48,11 +46,5 @@ public class TGMessageRichPhoto extends TGMessageMedia {
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
     // Edited rich messages are rebuilt from scratch, as the photo may appear or disappear
     return false;
-  }
-
-  @Override
-  public boolean onMessageClick (MessageView v, MessagesController c) {
-    TGMessageRich.open(c, msg.chatId, msg.id);
-    return true;
   }
 }

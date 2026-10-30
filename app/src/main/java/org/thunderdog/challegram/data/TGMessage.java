@@ -8116,7 +8116,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.ChatAdministrator admin) {
-    TGMessage parsedMessage = valueOf(context, msg);
+    String filterPhrase = KeywordFilter.findMatch(context, msg);
+    TGMessage parsedMessage = filterPhrase != null ? new TGMessageFiltered(context, msg, filterPhrase) : valueOf(context, msg);
     if (chat != null) {
       parsedMessage.setChatData(chat, messageThread);
     }
@@ -8129,6 +8130,33 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg) {
     return valueOf(context, msg, msg.content);
+  }
+
+  /**
+   * Checks an already created message against {@link KeywordFilter}: albums are checked once combined,
+   * as the caption may belong to any of their messages, and displayed messages are checked again after phrases are added.
+   *
+   * @return placeholder replacing the message, or the same message if it must be shown as is.
+   * Caller is responsible for destroying the replaced message.
+   */
+  public static TGMessage applyKeywordFilter (MessagesManager context, TGMessage message) {
+    if (message instanceof TGMessageFiltered || message.isSponsoredMessage()) {
+      return message;
+    }
+    TdApi.Message[] messages = message.getAllMessages();
+    String phrase = KeywordFilter.findMatch(context, messages);
+    if (phrase == null) {
+      return message;
+    }
+    TGMessage filtered = new TGMessageFiltered(context, messages[0], phrase);
+    if (message.chat != null) {
+      filtered.setChatData(message.chat, message.messagesController().getMessageThread());
+    }
+    filtered.initSelectedMessages();
+    for (int i = 1; i < messages.length; i++) {
+      filtered.combineWith(messages[i], true);
+    }
+    return filtered;
   }
 
   @Nullable

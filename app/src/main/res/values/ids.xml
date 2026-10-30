@@ -179,6 +179,7 @@
   <item type="id" name="controller_people" />
   <item type="id" name="controller_settings" />
   <item type="id" name="controller_archiveSettings" />
+  <item type="id" name="controller_keywordFilter" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
   <item type="id" name="controller_wallpaper" />
@@ -923,6 +924,13 @@
   <item type="id" name="btn_downloads" />
   <item type="id" name="btn_galleryFiles" />
   <item type="id" name="btn_reduceMotion" />
+  <item type="id" name="btn_keywordFilter" />
+  <item type="id" name="btn_keywordFilterPhrases" />
+  <item type="id" name="btn_hideSponsoredMessages" />
+  <item type="id" name="btn_keywordFilterAdd" />
+  <item type="id" name="btn_keywordFilterPhrase" />
+  <item type="id" name="btn_keywordFilterExport" />
+  <item type="id" name="btn_keywordFilterImport" />
   <item type="id" name="btn_other" />
   <item type="id" name="btn_showMore" />
   <item type="id" name="btn_junk" />
@@ -1147,6 +1155,10 @@
   <item type="id" name="btn_messageSearchFilterGif" />
 
   <item type="id" name="btn_messageMore" />
+  <item type="id" name="btn_messageAddToKeywordFilter" />
+  <item type="id" name="btn_messageOpenRichMessage" />
+  <item type="id" name="btn_messageSelectText" />
+  <item type="id" name="btn_selectionAddToKeywordFilter" />
   <item type="id" name="btn_messageCopy" />
   <item type="id" name="btn_messageCopyLink" />
   <item type="id" name="btn_messageReply" />

@@ -19,7 +19,6 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -34,23 +33,17 @@ import java.util.List;
 
 /**
  * Rich message (built from page blocks) shown as a text summary.
- * Tapping the message opens the full version in Instant View.
+ * The full version opens in Instant View from the message options.
  */
 public class TGMessageRich extends TGMessageText {
   public TGMessageRich (MessagesManager context, TdApi.Message msg, TdApi.MessageRichMessage content) {
-    super(context, msg, buildText(content.message, true));
+    super(context, msg, buildText(content.message));
   }
 
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
     // Edited rich messages are rebuilt from scratch, as the photo may appear or disappear
     return false;
-  }
-
-  @Override
-  public boolean onMessageClick (MessageView v, MessagesController c) {
-    open(c, msg.chatId, msg.id);
-    return true;
   }
 
   public static void open (MessagesController c, long chatId, long messageId) {
@@ -116,26 +109,25 @@ public class TGMessageRich extends TGMessageText {
    * Flattens rich message blocks into a plain text summary.
    * Headings and collapsible section titles are bold, contents of closed sections are skipped.
    */
-  public static TdApi.FormattedText buildText (TdApi.RichMessage richMessage, boolean addOpenHint) {
-    return buildText(richMessage, addOpenHint, null);
+  public static TdApi.FormattedText buildText (TdApi.RichMessage richMessage) {
+    return buildText(richMessage, null);
   }
 
   /**
    * @param shownPhoto photo block already displayed in the bubble, its placeholder line is omitted
    */
-  public static TdApi.FormattedText buildText (TdApi.RichMessage richMessage, boolean addOpenHint, @Nullable TdApi.PageBlockPhoto shownPhoto) {
+  public static TdApi.FormattedText buildText (TdApi.RichMessage richMessage, @Nullable TdApi.PageBlockPhoto shownPhoto) {
+    return buildText(richMessage, shownPhoto, false);
+  }
+
+  /**
+   * @param expandAll include contents of closed collapsible sections
+   */
+  public static TdApi.FormattedText buildText (TdApi.RichMessage richMessage, @Nullable TdApi.PageBlockPhoto shownPhoto, boolean expandAll) {
     StringBuilder b = new StringBuilder();
     List<TdApi.TextEntity> entities = new ArrayList<>();
     for (TdApi.PageBlock block : richMessage.blocks) {
-      appendBlock(block, b, entities, shownPhoto);
-    }
-    if (addOpenHint) {
-      if (b.length() > 0) {
-        b.append("\n\n");
-      }
-      String hint = Lang.getString(R.string.OpenMessage);
-      entities.add(new TdApi.TextEntity(b.length(), hint.length(), new TdApi.TextEntityTypeItalic()));
-      b.append(hint);
+      appendBlock(block, b, entities, shownPhoto, expandAll);
     }
     return new TdApi.FormattedText(b.toString(), entities.toArray(new TdApi.TextEntity[0]));
   }
@@ -163,7 +155,7 @@ public class TGMessageRich extends TGMessageText {
     }
   }
 
-  private static void appendBlock (TdApi.PageBlock block, StringBuilder b, List<TdApi.TextEntity> entities, @Nullable TdApi.PageBlockPhoto shownPhoto) {
+  private static void appendBlock (TdApi.PageBlock block, StringBuilder b, List<TdApi.TextEntity> entities, @Nullable TdApi.PageBlockPhoto shownPhoto, boolean expandAll) {
     switch (block.getConstructor()) {
       case TdApi.PageBlockTitle.CONSTRUCTOR:
         appendLine(b, entities, ((TdApi.PageBlockTitle) block).title, true);
@@ -206,14 +198,14 @@ public class TGMessageRich extends TGMessageText {
         break;
       case TdApi.PageBlockBlockQuote.CONSTRUCTOR:
         for (TdApi.PageBlock child : ((TdApi.PageBlockBlockQuote) block).blocks) {
-          appendBlock(child, b, entities, shownPhoto);
+          appendBlock(child, b, entities, shownPhoto, expandAll);
         }
         break;
       case TdApi.PageBlockList.CONSTRUCTOR:
         for (TdApi.PageBlockListItem item : ((TdApi.PageBlockList) block).items) {
           int start = b.length();
           for (TdApi.PageBlock child : item.blocks) {
-            appendBlock(child, b, entities, shownPhoto);
+            appendBlock(child, b, entities, shownPhoto, expandAll);
           }
           if (b.length() > start) {
             int offset = start > 0 ? start + 1 : start;
@@ -231,9 +223,9 @@ public class TGMessageRich extends TGMessageText {
         TdApi.PageBlockDetails details = (TdApi.PageBlockDetails) block;
         String header = TD.getText(details.header);
         appendLine(b, entities, (details.isOpen ? "▾ " : "▸ ") + header, true);
-        if (details.isOpen) {
+        if (details.isOpen || expandAll) {
           for (TdApi.PageBlock child : details.blocks) {
-            appendBlock(child, b, entities, shownPhoto);
+            appendBlock(child, b, entities, shownPhoto, expandAll);
           }
         }
         break;
@@ -250,13 +242,13 @@ public class TGMessageRich extends TGMessageText {
         break;
       case TdApi.PageBlockCollage.CONSTRUCTOR:
         for (TdApi.PageBlock child : ((TdApi.PageBlockCollage) block).blocks) {
-          appendBlock(child, b, entities, shownPhoto);
+          appendBlock(child, b, entities, shownPhoto, expandAll);
         }
         appendCaption(b, entities, ((TdApi.PageBlockCollage) block).caption);
         break;
       case TdApi.PageBlockSlideshow.CONSTRUCTOR:
         for (TdApi.PageBlock child : ((TdApi.PageBlockSlideshow) block).blocks) {
-          appendBlock(child, b, entities, shownPhoto);
+          appendBlock(child, b, entities, shownPhoto, expandAll);
         }
         appendCaption(b, entities, ((TdApi.PageBlockSlideshow) block).caption);
         break;

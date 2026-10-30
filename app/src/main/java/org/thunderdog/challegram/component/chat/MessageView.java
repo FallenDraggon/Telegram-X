@@ -34,9 +34,11 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ContentPreview;
+import org.thunderdog.challegram.data.KeywordFilter;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
+import org.thunderdog.challegram.data.TGMessageFiltered;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGMessageText;
@@ -660,6 +662,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return null;
     }
 
+    if (!isMore && content.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR) {
+      ids.append(R.id.btn_messageOpenRichMessage);
+      strings.append(R.string.RichMessageOpen);
+      icons.append(R.drawable.baseline_book_24);
+    }
+
     if (!isMore && msg.messagesController().inOnlyFoundMode()) {
       ids.append(R.id.btn_messageShowInChatSearch);
       strings.append(R.string.MessageShowInChat);
@@ -1145,6 +1153,26 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             }
           }
         }
+      }
+    }
+
+    if (msg.canBeSaved() && !(msg instanceof TGMessageFiltered) && !KeywordFilter.getText(msg.getAllMessages()).isEmpty()) {
+      if (isMore) {
+        ids.append(R.id.btn_messageSelectText);
+        strings.append(R.string.SelectText);
+        icons.append(R.drawable.baseline_format_text_24);
+      } else {
+        moreOptions++;
+      }
+    }
+
+    if (!msg.isOutgoing() && !msg.isSponsoredMessage() && !(msg instanceof TGMessageFiltered)) {
+      if (isMore) {
+        ids.append(R.id.btn_messageAddToKeywordFilter);
+        strings.append(R.string.KeywordFilterAdd);
+        icons.append(R.drawable.baseline_eye_off_24);
+      } else {
+        moreOptions++;
       }
     }
 

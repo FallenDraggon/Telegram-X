@@ -283,7 +283,7 @@ public class ContentPreview {
       case TdApi.MessageRichMessage.CONSTRUCTOR: {
         TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) message.content;
         if (allowContent) {
-          formattedText = TGMessageRich.buildText(richMessage.message, false);
+          formattedText = TGMessageRich.buildText(richMessage.message);
         }
         break;
       }

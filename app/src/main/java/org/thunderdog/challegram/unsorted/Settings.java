@@ -244,6 +244,7 @@ public class Settings {
   private static final String KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT = "language_draft_translate";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
+  private static final String KEY_HIDE_SPONSORED_MESSAGES = "settings_hide_sponsored_messages";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
@@ -2810,6 +2811,20 @@ public class Settings {
       pmc.remove(KEY_RESTRICT_CONTENT);
     else
       pmc.putBoolean(KEY_RESTRICT_CONTENT, false);
+  }
+
+  private Boolean needHideSponsoredMessages;
+
+  public boolean needHideSponsoredMessages () {
+    return needHideSponsoredMessages != null ? needHideSponsoredMessages : (needHideSponsoredMessages = pmc.getBoolean(KEY_HIDE_SPONSORED_MESSAGES, false));
+  }
+
+  public void setHideSponsoredMessages (boolean hide) {
+    needHideSponsoredMessages = hide;
+    if (hide)
+      pmc.putBoolean(KEY_HIDE_SPONSORED_MESSAGES, true);
+    else
+      pmc.remove(KEY_HIDE_SPONSORED_MESSAGES);
   }
 
   public boolean needReduceMotion () {

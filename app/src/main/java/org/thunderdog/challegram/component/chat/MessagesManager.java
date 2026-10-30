@@ -77,8 +77,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -107,6 +109,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private TdApi.ChatEventLogFilters eventLogFilters;
 
   private LongSparseArray<TdApi.ChatAdministrator> chatAdmins;
+
+  // Messages revealed from KeywordFilter, collapsed again once the chat is reopened
+  private final Set<String> keywordFilterRevealed = Collections.synchronizedSet(new HashSet<>());
 
   private static final int TOP_PRELOAD_COUNT = 10;
   private static final int BOTTOM_PRELOAD_COUNT = 7;
@@ -545,6 +550,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     lastViewedMentionMessageId = 0;
     lastViewedReactionMessageId = 0;
     chatAdmins = null;
+    keywordFilterRevealed.clear();
     if (pinnedMessages != null) {
       pinnedMessages.performDestroy();
       pinnedMessages = null;
@@ -1915,6 +1921,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       boolean atBottom = manager.findFirstVisibleItemPosition() == 0;
       TGMessage bottomMessage = adapter.getBottomMessage();
       if (bottomMessage != null && bottomMessage.combineWith(message.getMessage(), true)) {
+        TGMessage filtered = TGMessage.applyKeywordFilter(this, bottomMessage);
+        if (filtered != bottomMessage) {
+          // Album caption arrived later than the first album item
+          filtered.prepareLayout();
+          adapter.replaceItem(adapter.indexOfMessageContainer(bottomMessage.getId()), filtered);
+          bottomMessage = filtered;
+        }
         if (!atBottom) {
           bottomMessage.markAsUnread();
         }
@@ -2097,6 +2110,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     switch (msg.removeMessage(messageId)) {
       case TGMessage.REMOVE_COMPLETELY: {
         TGMessage replace = TGMessage.valueOf(this, message, msg.getChat(), msg.messagesController().getMessageThread(), chatAdmins);
+        replace.prepareLayout();
         adapter.replaceItem(index, replace);
         break;
       }
@@ -3453,16 +3467,67 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (cur.combineWith(message, true)) {
           continue;
         }
+        cur = applyKeywordFilter(cur);
         cur.prepareLayout();
         parsedMessages.add(cur);
       }
       cur = TGMessage.valueOf(this, message, chat, messageThread, chatAdmins);
     }
     if (cur != null) {
+      cur = applyKeywordFilter(cur);
       cur.prepareLayout();
       parsedMessages.add(cur);
     }
     return parsedMessages;
+  }
+
+  private TGMessage applyKeywordFilter (TGMessage message) {
+    TGMessage filtered = TGMessage.applyKeywordFilter(this, message);
+    if (filtered != message) {
+      message.onDestroy();
+    }
+    return filtered;
+  }
+
+  public boolean isKeywordFilterRevealed (TdApi.Message message) {
+    return keywordFilterRevealed.contains(message.chatId + "_" + message.id);
+  }
+
+  public void setKeywordFilterRevealed (TdApi.Message[] messages) {
+    for (TdApi.Message message : messages) {
+      keywordFilterRevealed.add(message.chatId + "_" + message.id);
+    }
+  }
+
+  /**
+   * Collapses displayed messages that match {@link org.thunderdog.challegram.data.KeywordFilter} after phrases were added.
+   */
+  public void applyKeywordFilterToDisplayedMessages () {
+    for (int index = 0; index < adapter.getMessageCount(); index++) {
+      TGMessage message = adapter.getMessage(index);
+      TGMessage filtered = TGMessage.applyKeywordFilter(this, message);
+      if (filtered != message) {
+        filtered.prepareLayout();
+        adapter.replaceItem(index, filtered);
+      }
+    }
+  }
+
+  /**
+   * Recreates the message from scratch, e.g. after it was revealed from {@link org.thunderdog.challegram.data.KeywordFilter}.
+   */
+  public void rebuildMessage (TGMessage message) {
+    int index = adapter.indexOfMessageContainer(message.getId());
+    if (index == -1) {
+      return;
+    }
+    TdApi.Message[] messages = message.getAllMessages();
+    TGMessage replace = TGMessage.valueOf(this, messages[0], message.getChat(), message.messagesController().getMessageThread(), chatAdmins);
+    for (int i = 1; i < messages.length; i++) {
+      replace.combineWith(messages[i], true);
+    }
+    replace.prepareLayout();
+    adapter.replaceItem(index, replace);
   }
 
   /*@Override
